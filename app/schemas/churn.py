@@ -1,9 +1,11 @@
-from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+
 class FeatureVectorChurn(BaseModel):
-    model_config = ConfigDict(json_schema_extra={
+    """Признаки одного клиента — вход для /predict. Поля должны совпадать с DatasetRowChurn (кроме churn)."""
+    model_config = ConfigDict(extra="forbid", json_schema_extra={
         "examples": [{
             "monthly_fee": 19.99,
             "usage_hours": 21.48,
@@ -28,6 +30,7 @@ class FeatureVectorChurn(BaseModel):
 
 
 class DatasetRowChurn(BaseModel):
+    """Строка тренировочного датасета: признаки + целевая метка churn."""
     monthly_fee: float
     usage_hours: float
     support_requests: int
@@ -39,30 +42,37 @@ class DatasetRowChurn(BaseModel):
     autopay_enabled: int
     churn: int
 
+
+class PredictionResponseChurn(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "examples": [{"churn": 0, "churn_probability": 0.46, "probabilities": {"0": 0.54, "1": 0.46}}]
+    })
+    churn: int
+    churn_probability: float
+    probabilities: dict[int, float]
+
+
 class DatasetInfo(BaseModel):
     n_rows: int
     n_columns: int
     features: list[str]
     churn_distribution: dict[int, int]
 
+
 class SplitInfo(BaseModel):
-    test_size: int
     train_size: int
+    test_size: int
     train_churn_distribution: dict[int, int]
     test_churn_distribution: dict[int, int]
 
-class TrainResponse(BaseModel):
-    accuracy: float
-    f1: float
-    train_size: int
-    test_size: int
 
-class ModelStatus(BaseModel):
-    is_trained: bool
-    trained_at: datetime | None = None
-    metrics: TrainResponse | None = None
+class FeatureSchemaItem(BaseModel):
+    name: str
+    type: str
+    kind: Literal["numeric", "categorical"]
+    allowed_values: list[str] | None = None
 
-class PredictionResponseChurn(BaseModel):
-    churn: int
-    churn_probability: float
-    probabilities: dict[int, float]
+
+class ModelSchema(BaseModel):
+    features: list[FeatureSchemaItem]
+    target: str = "churn"

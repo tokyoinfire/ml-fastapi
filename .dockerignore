@@ -1,0 +1,11 @@
+.venv/
+.idea/
+.git/
+__pycache__/
+**/__pycache__/
+models/
+output/
+tests/
+*.log
+.pytest_cache/
+docs/
